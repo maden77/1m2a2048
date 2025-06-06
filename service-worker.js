@@ -1,4 +1,4 @@
-const CACHE_NAME = "2048-cache-v1";
+const CACHE_NAME = "2048 maden-cache-v1";
 const urlsToCache = [
   "./",
   "./index.html",
