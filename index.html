@@ -1,23 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head> 
-  <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#faf8ef" />
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#faf8ef" />
   <title>2048 Game</title>
-  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0"/>
+
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>2048</h1>
   <div id="game-board"></div>
   <p id="score">Score: 0</p>
+
   <script src="script.js"></script>
-<script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-  }
-</script>
+
+  <script>
+    // PWA service worker
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+
+    // Mencegah gesture swipe browser di mobile (pull to refresh / back)
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+
+    let startX = 0;
+    let startY = 0;
+
+    document.addEventListener('touchstart', function (e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    });
+
+    document.addEventListener('touchmove', function (e) {
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+
+      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+        e.preventDefault(); // Cegah swipe gesture bawaan
+      }
+    }, { passive: false });
+  </script>
 </body>
 </html>
