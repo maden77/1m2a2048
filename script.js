@@ -1,123 +1,26 @@
-const board = document.getElementById("game-board");
-const scoreText = document.getElementById("score");
-let grid = [];
-let score = 0;
-document.addEventListener('touchmove', function (e) {
-  e.preventDefault();
-}, { passive: false });
+// script.js - Versi ringan game 2048
 
-function initBoard() {
-  board.innerHTML = "";
-  grid = Array(4).fill().map(() => Array(4).fill(0));
-  addRandomTile();
-  addRandomTile();
-  drawBoard();
-  updateScore();
-}
+const board = document.getElementById("game-board"); const size = 4; let grid = []; let score = 0;
 
-function drawBoard() {
-  board.innerHTML = "";
-  grid.forEach(row => {
-    row.forEach(cell => {
-      const tile = document.createElement("div");
-      tile.classList.add("tile");
-      if (cell !== 0) {
-        tile.textContent = cell;
-        tile.classList.add(`tile-${cell}`);
-      }
-      board.appendChild(tile);
-    });
-  });
-}
+function createBoard() { board.innerHTML = ""; for (let r = 0; r < size; r++) { const row = []; for (let c = 0; c < size; c++) { const cell = document.createElement("div"); cell.className = "cell"; cell.textContent = ""; board.appendChild(cell); row.push(0); } grid.push(row); } addRandomTile(); addRandomTile(); drawBoard(); }
 
-function addRandomTile() {
-  const empty = [];
-  grid.forEach((row, i) =>
-    row.forEach((cell, j) => {
-      if (cell === 0) empty.push({ i, j });
-    })
-  );
-  if (empty.length === 0) return;
-  const { i, j } = empty[Math.floor(Math.random() * empty.length)];
-  grid[i][j] = Math.random() > 0.9 ? 4 : 2;
-}
+function addRandomTile() { let empty = []; for (let r = 0; r < size; r++) { for (let c = 0; c < size; c++) { if (grid[r][c] === 0) empty.push({ r, c }); } } if (empty.length === 0) return; const { r, c } = empty[Math.floor(Math.random() * empty.length)]; grid[r][c] = Math.random() < 0.9 ? 2 : 4; }
 
-function slide(row) {
-  const arr = row.filter(val => val);
-  for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i] === arr[i + 1]) {
-      arr[i] *= 2;
-      score += arr[i];
-      arr[i + 1] = 0;
-    }
-  }
-  return arr.filter(val => val).concat(Array(4 - arr.filter(val => val).length).fill(0));
-}
+function drawBoard() { const cells = board.querySelectorAll(".cell"); cells.forEach((cell, i) => { const r = Math.floor(i / size); const c = i % size; const val = grid[r][c]; cell.textContent = val === 0 ? "" : val; cell.className = "cell val-" + val; }); document.getElementById("score").textContent = "Score: " + score; }
 
-function rotateGridClockwise() {
-  grid = grid[0].map((_, i) => grid.map(row => row[i]).reverse());
-}
+function slide(row) { let arr = row.filter(v => v); for (let i = 0; i < arr.length - 1; i++) { if (arr[i] === arr[i + 1]) { arr[i] *= 2; score += arr[i]; arr[i + 1] = 0; } } return arr.filter(v => v).concat(Array(size - arr.filter(v => v).length).fill(0)); }
 
-function rotateGridCounterClockwise() {
-  grid = grid[0].map((_, i) => grid.map(row => row[3 - i]));
-}
+function rotateClockwise() { let newGrid = Array.from({ length: size }, () => Array(size).fill(0)); for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) newGrid[c][size - 1 - r] = grid[r][c]; grid = newGrid; }
 
-function handleInput(dir) {
-  let moved = false;
-  for (let i = 0; i < (dir === "up" || dir === "down" ? 1 : 0); i++) {
-    if (dir === "up") rotateGridCounterClockwise();
-    if (dir === "down") rotateGridClockwise();
-  }
+function moveLeft() { let moved = false; for (let r = 0; r < size; r++) { const newRow = slide(grid[r]); if (grid[r].toString() !== newRow.toString()) moved = true; grid[r] = newRow; } if (moved) { addRandomTile(); drawBoard(); } }
 
-  for (let i = 0; i < 4; i++) {
-    let original = [...grid[i]];
-    let newRow = slide(grid[i]);
-    if (original.toString() !== newRow.toString()) moved = true;
-    grid[i] = newRow;
-  }
+function moveRight() { grid.forEach(row => row.reverse()); moveLeft(); grid.forEach(row => row.reverse()); }
 
-  for (let i = 0; i < (dir === "up" || dir === "down" ? 1 : 0); i++) {
-    if (dir === "up") rotateGridClockwise();
-    if (dir === "down") rotateGridCounterClockwise();
-  }
+function moveUp() { rotateClockwise(); rotateClockwise(); rotateClockwise(); moveLeft(); rotateClockwise(); }
 
-  if (moved) {
-    addRandomTile();
-    drawBoard();
-    updateScore();
-    checkGameOver();
-  }
-}
+function moveDown() { rotateClockwise(); moveLeft(); rotateClockwise(); rotateClockwise(); rotateClockwise(); }
 
-function updateScore() {
-  scoreText.textContent = `Score: ${score}`;
-}
+document.addEventListener("keydown", e => { switch (e.key) { case "ArrowLeft": moveLeft(); break; case "ArrowRight": moveRight(); break; case "ArrowUp": moveUp(); break; case "ArrowDown": moveDown(); break; } });
 
-function checkGameOver() {
-  if (grid.flat().includes(0)) return;
+createBoard();
 
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 3; j++) {
-      if (grid[i][j] === grid[i][j + 1] || grid[j][i] === grid[j + 1][i]) {
-        return;
-      }
-    }
-  }
-
-  alert("Game Over!");
-}
-
-document.addEventListener("keydown", e => {
-  switch (e.key) {
-    case "ArrowLeft": handleInput("left"); break;
-    case "ArrowRight": 
-      grid = grid.map(row => row.reverse());
-      handleInput("left");
-      grid = grid.map(row => row.reverse());
-      break;
-    case "ArrowUp": handleInput("up"); break;
-    case "ArrowDown": handleInput("down"); break;
-  }
-});
-
-initBoard();
