@@ -1,48 +1,233 @@
 <!DOCTYPE html>
-<html lang="en">
-<head> 
+<html lang="id">
+<head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0"/>
-  <meta name="theme-color" content="#faf8ef" />
-  <title>2048 Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2048 maden</title>
+  <style>
+    body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Ini penting */
+    touch-action: none; /* Mencegah gesture bawaan */
+  }
 
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
+  body {
+    font-family: sans-serif;
+    text-align: center;
+    background-color: rgba (0, 0, 255, 0,5);
+  }
+  
+    
+    #game-board {
+      width: 320px;
+      height: 320px;
+      margin: 20px auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 5px;
+    }
+    .tile {
+      width: 100%;
+      height: 100%;
+      background: #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background 0.2s ease;
+    }
+    .tile-2    { background: #eee4da; color: #776e65; }
+    .tile-4    { background: #ede0c8; color: #776e65; }
+    .tile-8    { background: #f2b179; color: #f9f6f2; }
+    .tile-16   { background: #f59563; color: #f9f6f2; }
+    .tile-32   { background: #f67c5f; color: #f9f6f2; }
+    .tile-64   { background: #f65e3b; color: #f9f6f2; }
+    .tile-128  { background: #edcf72; color: #f9f6f2; font-size: 20px; }
+    .tile-256  { background: #edcc61; color: #f9f6f2; font-size: 20px; }
+    .tile-512  { background: #edc850; color: #f9f6f2; font-size: 20px; }
+    .tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 18px; }
+    .tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 18px; }
+    .tile-4096 { background: #3c3a32; color: #ffffff; }
+    .tile-8192 { background: #1f1d1a; color: #ffffff; }
+  </style>
 </head>
 <body>
-  <h1>2048</h1>
+  <h1>2048 maden </h1>
   <div id="game-board"></div>
-  <p id="score">Score: 0</p>
-
-  <script src="script.js"></script>
-
   <script>
-    // PWA service worker
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
+    const board = document.getElementById("game-board");
+    let grid = [];
+
+    function createEmptyBoard() {
+      grid = [];
+      for (let i = 0; i < 4; i++) {
+        grid[i] = [];
+        for (let j = 0; j < 4; j++) {
+          grid[i][j] = 0;
+        }
+      }
     }
 
-    // Mencegah gesture swipe browser di mobile (pull to refresh / back)
-    document.addEventListener('touchstart', function (e) {
-      if (e.touches.length > 1) e.preventDefault();
-    }, { passive: false });
+    function drawBoard() {
+      board.innerHTML = "";
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          const tile = document.createElement("div");
+          tile.classList.add("tile");
 
-    let startX = 0;
-    let startY = 0;
+          const val = grid[i][j];
+          if (val !== 0) {
+            tile.textContent = val;
+            tile.classList.add(`tile-${val}`);
+          }
 
-    document.addEventListener('touchstart', function (e) {
+          board.appendChild(tile);
+        }
+      }
+    }
+
+    function addRandomTile() {
+      let empty = [];
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          if (grid[i][j] === 0) empty.push({ x: i, y: j });
+        }
+      }
+      if (empty.length === 0) return;
+      let spot = empty[Math.floor(Math.random() * empty.length)];
+      grid[spot.x][spot.y] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    function slide(row) {
+      let arr = row.filter(val => val);
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i] === arr[i + 1]) {
+          arr[i] *= 2;
+          arr[i + 1] = 0;
+        }
+      }
+      arr = arr.filter(val => val);
+      while (arr.length < 4) arr.push(0);
+      return arr;
+    }
+
+    function rotateGrid() {
+      let newGrid = [];
+      for (let i = 0; i < 4; i++) {
+        newGrid[i] = [];
+        for (let j = 0; j < 4; j++) {
+          newGrid[i][j] = grid[j][3 - i];
+        }
+      }
+      grid = newGrid;
+    }
+
+    function moveLeft() {
+      for (let i = 0; i < 4; i++) {
+        grid[i] = slide(grid[i]);
+      }
+    }
+
+    function moveRight() {
+      for (let i = 0; i < 4; i++) {
+        grid[i] = slide(grid[i].reverse()).reverse();
+      }
+    }
+
+    function moveUp() {
+      rotateGrid();
+      moveLeft();
+      rotateGrid(); rotateGrid(); rotateGrid();
+    }
+
+    function moveDown() {
+      rotateGrid();
+      moveRight();
+      rotateGrid(); rotateGrid(); rotateGrid();
+    }
+
+    function isGameOver(g) {
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const current = g[y][x];
+          if (current === 0) return false;
+          if (x < 3 && current === g[y][x + 1]) return false;
+          if (y < 3 && current === g[y + 1][x]) return false;
+        }
+      }
+      return true;
+    }
+
+    function copyGrid(g) {
+      return g.map(row => row.slice());
+    }
+
+    function gridsAreEqual(a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function handleKey(e) {
+      e.preventDefault(); // Mencegah scroll / refresh
+      const oldGrid = copyGrid(grid);
+      switch (e.key) {
+        case "ArrowLeft": moveLeft(); break;
+        case "ArrowRight": moveRight(); break;
+        case "ArrowUp": moveUp(); break;
+        case "ArrowDown": moveDown(); break;
+        default: return;
+      }
+      if (!gridsAreEqual(oldGrid, grid)) {
+        addRandomTile();
+        drawBoard();
+        if (isGameOver(grid)) {
+          alert("Game Over! Tidak ada langkah lagi.");
+        }
+      }
+    }
+
+    document.addEventListener("keydown", handleKey);
+
+    // Swipe support untuk layar sentuh
+    let startX, startY;
+    document.addEventListener("touchstart", function(e) {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
-    });
+    }, { passive: false });
 
-    document.addEventListener('touchmove', function (e) {
-      const dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
+    document.addEventListener("touchend", function(e) {
+      e.preventDefault(); // Hindari refresh saat swipe
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
 
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        e.preventDefault(); // Cegah swipe gesture bawaan
+      const oldGrid = copyGrid(grid);
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) moveRight();
+        else if (dx < -30) moveLeft();
+      } else {
+        if (dy > 30) moveDown();
+        else if (dy < -30) moveUp();
+      }
+
+      if (!gridsAreEqual(oldGrid, grid)) {
+        addRandomTile();
+        drawBoard();
+        if (isGameOver(grid)) {
+          alert("Game Over! Tidak ada langkah lagi.");
+        }
       }
     }, { passive: false });
+
+    createEmptyBoard();
+    addRandomTile();
+    addRandomTile();
+    drawBoard();
   </script>
 </body>
 </html>
