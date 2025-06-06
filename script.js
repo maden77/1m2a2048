@@ -2,6 +2,9 @@ const board = document.getElementById("game-board");
 const scoreText = document.getElementById("score");
 let grid = [];
 let score = 0;
+document.addEventListener('touchmove', function (e) {
+  e.preventDefault();
+}, { passive: false });
 
 function initBoard() {
   board.innerHTML = "";
